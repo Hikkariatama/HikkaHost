@@ -9,7 +9,6 @@ import threading
 TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
-chat_message_count = {}
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -106,9 +105,6 @@ def start_hikka(user_id, message=None, first_name=None):
                     break
 
             if "error" in decoded_line.lower():
-                data = load_data()
-                data[user_id] = {"running": False, "installing": False}
-                save_data(data)
                 break
 
             time.sleep(1)
@@ -173,16 +169,6 @@ def callback_query(call):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    chat_id = message.chat.id
-
-    if chat_id not in chat_message_count:
-        chat_message_count[chat_id] = 0
-
-    chat_message_count[chat_id] += 1
-
-    if chat_message_count[chat_id] > 2:
-        return
-
     user_id = str(message.from_user.id)
     first_name = message.from_user.first_name
     data = load_data()
@@ -195,9 +181,6 @@ def start(message):
             reply_markup=create_keyboard(user_id)
         )
     else:
-        data[user_id] = {"running": False, "installing": True}
-        save_data(data)
-        
         msg = bot.send_message(
             message.chat.id,
             f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, чтобы установить <code>Hikka</code>, нажми на кнопку снизу!",
