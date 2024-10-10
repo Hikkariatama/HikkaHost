@@ -77,12 +77,12 @@ def start_hikka(user_id, message=None, first_name=None):
                     if link and message:
                         markup = telebot.types.InlineKeyboardMarkup()
                         web_app = telebot.types.WebAppInfo(link)
-                        markup.add(telebot.types.InlineKeyboardButton("Открыть сайт", web_app=web_app))
+                        markup.add(telebot.types.InlineKeyboardButton("🔗 Тык", web_app=web_app))
 
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a>, открой сайт для продолжения установки!",
+                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, открой сайт для продолжения установки!<b>",
                             reply_markup=markup,
                             parse_mode="HTML"
                         )
@@ -98,7 +98,7 @@ def start_hikka(user_id, message=None, first_name=None):
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, Hikka была успешно установлена! Чтобы удалить её, нажми на кнопку снизу.",
+                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b> <code>Hikka</code><b> была успешно установлена! Чтобы удалить её, нажми на кнопку снизу.</b>",
                             parse_mode="HTML",
                             reply_markup=create_keyboard(user_id)
                         )
@@ -160,12 +160,12 @@ def callback_query(call):
             bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a>, Hikka была успешно удалена. Чтобы установить её обратно, нажми на кнопку снизу!",
+                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, Hikka была успешно удалена. Чтобы установить её обратно, нажми на кнопку снизу!</b>",
                 parse_mode="HTML",
                 reply_markup=create_keyboard(user_id)
             )
         else:
-            bot.send_message(call.message.chat.id, "⚠️ Ошибка удаления Hikka.")
+            bot.send_message(call.message.chat.id, "⚠️ Ошибка удаления!")
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -176,14 +176,20 @@ def start(message):
     if user_id in data and data[user_id].get("running", False):
         bot.send_message(
             message.chat.id,
-            f"👋 <a href='tg://user?id={user_id}'>{first_name}</a>, вы уже установили <code>Hikka</code>! <b>Чтобы её удалить нажмите на кнопку снизу!</b>",
+            f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, вы уже установили </b><code>Hikka</code>! <b>Чтобы её удалить нажмите на кнопку снизу!</b>",
             parse_mode="HTML",
             reply_markup=create_keyboard(user_id)
         )
     else:
+        if user_id in data and data[user_id].get("installing", False):
+            return
+        
+        if user_id in data:
+            bot.delete_message(message.chat.id, message.message_id)
+
         msg = bot.send_message(
             message.chat.id,
-            f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, чтобы установить <code>Hikka</code>, нажми на кнопку снизу!",
+            f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <b>чтобы установить</b> <code>Hikka</code><b>, нажми на кнопку снизу!</b>",
             parse_mode="HTML",
             reply_markup=create_keyboard(user_id)
         )
@@ -191,4 +197,3 @@ def start(message):
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
-    
