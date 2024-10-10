@@ -82,7 +82,7 @@ def start_hikka(user_id, message=None, first_name=None):
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, открой сайт для продолжения установки!<b>",
+                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, открой сайт для продолжения установки!</b>",
                             reply_markup=markup,
                             parse_mode="HTML"
                         )
