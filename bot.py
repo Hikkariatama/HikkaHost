@@ -139,9 +139,6 @@ def callback_query(call):
         if data.get(user_id, {}).get("installing", False):
             return
         
-        data[user_id] = {"running": False, "installing": True}
-        save_data(data)
-
         msg = bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -186,7 +183,7 @@ def start(message):
             return
         
         if user_id in data:
-            bot.delete_message(message.chat.id, message.message_id)
+            bot.delete_message(message.chat.id, message.message_id - 2)
 
         msg = bot.send_message(
             message.chat.id,
@@ -194,10 +191,71 @@ def start(message):
             parse_mode="HTML",
             reply_markup=create_keyboard(user_id)
         )
-        data[user_id] = {"menu_message_id": msg.message_id}
-        save_data(data)
+
+def start_hikka(user_id, message=None, first_name=None):
+    user_folder = f"./{user_id}"
+    os.makedirs(user_folder, exist_ok=True)
+    os.chdir(user_folder)
+
+    wget_command = "wget -qO- https://hikariatama.ru/get_hikka | bash"
+    process = subprocess.Popen(wget_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    stop_event = threading.Event()
+
+    def monitor_process():
+        lines_received = 0
+        sent_initial_link = False
+
+        while True:
+            output = process.stdout.readline()
+            if output == b"" and process.poll() is not None:
+                break
+
+            if output:
+                decoded_line = output.decode('utf-8')
+                print(decoded_line, end='', flush=True)
+                lines_received += 1
+
+                if not sent_initial_link:
+                    link = find_link(decoded_line)
+                    if link and message:
+                        markup = telebot.types.InlineKeyboardMarkup()
+                        web_app = telebot.types.WebAppInfo(link)
+                        markup.add(telebot.types.InlineKeyboardButton("🔗 Тык", web_app=web_app))
+
+                        bot.edit_message_text(
+                            chat_id=message.chat.id,
+                            message_id=message.message_id,
+                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, открой сайт для продолжения установки!</b>",
+                            reply_markup=markup,
+                            parse_mode="HTML"
+                        )
+                        sent_initial_link = True
+                        stop_event.set()
+
+                if "hikka" in decoded_line.lower():
+                    data = load_data()
+                    data[user_id] = {"running": True, "installing": False}
+                    save_data(data)
+
+                    if message:
+                        bot.edit_message_text(
+                            chat_id=message.chat.id,
+                            message_id=message.message_id,
+                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b> <code>Hikka</code><b> была успешно установлена! Чтобы удалить её, нажми на кнопку снизу.</b>",
+                            parse_mode="HTML",
+                            reply_markup=create_keyboard(user_id)
+                        )
+                    break
+
+            if "error" in decoded_line.lower():
+                break
+
+            time.sleep(1)
+
+    threading.Thread(target=monitor_process, daemon=True).start()
+    threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
-                       
