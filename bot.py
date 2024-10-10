@@ -198,7 +198,7 @@ def start(message):
         if user_id in data and data[user_id].get("installing", False):
             return
         
-        bot.delete_message(message.chat.id, message.message_id - 2)
+        bot.delete_message(message.chat.id, message.message_id - 3)
 
         msg = bot.send_message(
             message.chat.id,
