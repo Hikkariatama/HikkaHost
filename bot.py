@@ -34,7 +34,6 @@ def start_hikka_instances():
 def animate_installation(message, stop_event):
     dots = ["", ".", "..", "..."]
     idx = 0
-
     while not stop_event.is_set():
         try:
             bot.edit_message_text(
@@ -52,33 +51,27 @@ def start_hikka(user_id, message=None, first_name=None):
     user_folder = f"./{user_id}"
     os.makedirs(user_folder, exist_ok=True)
     os.chdir(user_folder)
-
     wget_command = "wget -qO- https://hikariatama.ru/get_hikka | bash"
     process = subprocess.Popen(wget_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
     stop_event = threading.Event()
 
     def monitor_process():
         lines_received = 0
         sent_initial_link = False
-
         while True:
             output = process.stdout.readline()
             if output == b"" and process.poll() is not None:
                 break
-
             if output:
                 decoded_line = output.decode('utf-8')
                 print(decoded_line, end='', flush=True)
                 lines_received += 1
-
                 if not sent_initial_link:
                     link = find_link(decoded_line)
                     if link and message:
                         markup = telebot.types.InlineKeyboardMarkup()
                         web_app = telebot.types.WebAppInfo(link)
                         markup.add(telebot.types.InlineKeyboardButton("🔗 Тык", web_app=web_app))
-
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
@@ -88,12 +81,10 @@ def start_hikka(user_id, message=None, first_name=None):
                         )
                         sent_initial_link = True
                         stop_event.set()
-
                 if "hikka" in decoded_line.lower():
                     data = load_data()
-                    data[user_id] = {"running": True, "installing": False}
+                    data[user_id] = {"running": True, "installing": False, "menu_active": False}
                     save_data(data)
-
                     if message:
                         bot.edit_message_text(
                             chat_id=message.chat.id,
@@ -103,11 +94,9 @@ def start_hikka(user_id, message=None, first_name=None):
                             reply_markup=create_keyboard(user_id)
                         )
                     break
-
-            if "error" in decoded_line.lower():
-                break
-
-            time.sleep(1)
+                if "error" in decoded_line.lower():
+                    break
+                time.sleep(1)
 
     threading.Thread(target=monitor_process, daemon=True).start()
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
@@ -124,7 +113,10 @@ def create_keyboard(user_id):
     data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
     if user_id in data:
-        markup.add(telebot.types.InlineKeyboardButton("🗑️ Удалить", callback_data='remove'))
+        if data[user_id].get("menu_active", False):
+            markup.add(telebot.types.InlineKeyboardButton("🗑️ Удалить", callback_data='remove'))
+        else:
+            markup.add(telebot.types.InlineKeyboardButton("🌷 Установить", callback_data='install'))
     else:
         markup.add(telebot.types.InlineKeyboardButton("🌷 Установить", callback_data='install'))
     return markup
@@ -138,17 +130,16 @@ def callback_query(call):
     if call.data == 'install':
         if data.get(user_id, {}).get("installing", False):
             return
-        
-        data[user_id] = {"running": False, "installing": True}
+        if data.get(user_id, {}).get("menu_active", False):
+            return
+        data[user_id] = {"running": False, "installing": True, "menu_active": True}
         save_data(data)
-
         msg = bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             text=f"🔃 <b>Установка...</b>",
             parse_mode="HTML"
         )
-        
         start_hikka(user_id, msg, first_name)
 
     elif call.data == 'remove':
@@ -183,7 +174,8 @@ def start(message):
     else:
         if user_id in data and data[user_id].get("installing", False):
             return
-        
+        if user_id in data and data[user_id].get("menu_active", False):
+            return
         if user_id in data:
             bot.delete_message(message.chat.id, message.message_id)
 
