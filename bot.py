@@ -139,15 +139,6 @@ def stop_hikka(user_id):
     except Exception as e:
         logging.error(f"Exception occurred during directory removal: {e}")
         return False
-        
-def create_keyboard(user_id):
-    data = load_data()
-    markup = telebot.types.InlineKeyboardMarkup()
-    if user_id in data:
-        markup.add(telebot.types.InlineKeyboardButton("🗑️ Remove", callback_data='remove'))
-    else:
-        markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
-    return markup
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -180,13 +171,22 @@ def callback_query(call):
             bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> was successfully dalate from the hosting, to completely delete it, completely end its session through the telegram settings! To reinstall it, click the button below!</b>",
+                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> was successfully deleted from the hosting. To completely end its session, remove it from Telegram settings! To reinstall, click the button below!</b>",
                 parse_mode="HTML",
                 reply_markup=create_keyboard(user_id)
             )
         else:
             bot.send_message(call.message.chat.id, "⚠️ Error during removal!")
-
+            
+def create_keyboard(user_id):
+    data = load_data()
+    markup = telebot.types.InlineKeyboardMarkup()
+    if user_id in data:
+        markup.add(telebot.types.InlineKeyboardButton("🗑️ Remove", callback_data='remove'))
+    else:
+        markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
+    return markup
+                    
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = str(message.from_user.id)
