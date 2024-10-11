@@ -166,9 +166,7 @@ def callback_query(call):
                 parse_mode="HTML",
                 reply_markup=create_keyboard(user_id)
             )
-        else:
-            bot.send_message(call.message.chat.id, "⚠️ Error during removal!")
-
+        
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = str(message.from_user.id)
