@@ -116,8 +116,8 @@ def stop_hikka(user_id):
     user_folder = f"./{user_id}"
     if os.path.exists(user_folder):
         subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return True
-    return False
+        return False
+    return True
 
 def create_keyboard(user_id):
     data = load_data()
