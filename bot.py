@@ -119,6 +119,7 @@ def stop_hikka(user_id):
             subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             return True
     except Exception:
+        print {e}
         return False
     return False
 
