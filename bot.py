@@ -9,7 +9,6 @@ import threading
 TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
-USERID_FILE = 'userid-s.json'
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -19,16 +18,6 @@ def load_data():
 
 def save_data(data):
     with open(DATA_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
-
-def load_userid_data():
-    if os.path.exists(USERID_FILE):
-        with open(USERID_FILE, 'r') as file:
-            return json.load(file)
-    return {}
-
-def save_userid_data(data):
-    with open(USERID_FILE, 'w') as file:
         json.dump(data, file, indent=4)
 
 def find_link(output):
@@ -113,9 +102,6 @@ def start_hikka(user_id, message=None, first_name=None):
                             parse_mode="HTML",
                             reply_markup=create_keyboard(user_id)
                         )
-                    user_id_data = load_userid_data()
-                    user_id_data[user_id] = {"name": first_name}
-                    save_userid_data(user_id_data)
                     break
 
             if "error" in decoded_line.lower():
@@ -130,7 +116,7 @@ def stop_hikka(user_id):
     user_folder = f"./{user_id}"
     if os.path.exists(user_folder):
         subprocess.run(["pkill", "-f", "Hikka"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(["sudo", "rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     return False
 
@@ -197,7 +183,7 @@ def start(message):
     else:
         if user_id in data and data[user_id].get("installing", False):
             return
-        
+            
         msg = bot.send_message(
             message.chat.id,
             f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <b>чтобы установить</b> <code>Hikka</code><b>, нажми на кнопку снизу!</b>",
