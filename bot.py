@@ -112,14 +112,17 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=monitor_process, daemon=True).start()
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
-def stop_hikka(user_id):
+def stop_hikka(user_id, chat_id):
     user_folder = f"./{user_id}"
-    try:
-        if os.path.exists(user_folder):
-            subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if os.path.exists(user_folder):
+        try:
+            subprocess.run(["rm", "-rf", user_folder], check=True)
+            bot.send_message(chat_id, "🗑️ Папка пользователя успешно удалена.")
             return True
-    except Exception:
-        return False
+        except subprocess.CalledProcessError as e:
+            bot.send_message(chat_id, f"⚠️ Ошибка при удалении: {e}")
+            return False
+    bot.send_message(chat_id, "⚠️ Папка пользователя не найдена.")
     return False
 
 def create_keyboard(user_id):
@@ -154,7 +157,8 @@ def callback_query(call):
         start_hikka(user_id, msg, first_name)
 
     elif call.data == 'remove':
-        if stop_hikka(user_id):
+        chat_id = call.message.chat.id
+        if stop_hikka(user_id, chat_id):
             data = load_data()
             if user_id in data:
                 del data[user_id]
@@ -166,7 +170,9 @@ def callback_query(call):
                 parse_mode="HTML",
                 reply_markup=create_keyboard(user_id)
             )
-        
+        else:
+            bot.send_message(chat_id, "⚠️ Error during removal!")
+
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = str(message.from_user.id)
@@ -194,3 +200,4 @@ def start(message):
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
+                
