@@ -7,7 +7,7 @@ import json
 import threading
 import logging
 
-TOKEN = 'хуй вам а не токен'
+TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
 
@@ -54,7 +54,6 @@ def animate_installation(message, stop_event):
 def start_hikka(user_id, message=None, first_name=None):
     user_folder = f"users/{user_id}"
     os.makedirs(user_folder, exist_ok=True)
-    os.chdir(user_folder)
 
     wget_command = "wget -qO- https://hikariatama.ru/get_hikka | bash"
     process = subprocess.Popen(wget_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -117,22 +116,19 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 def stop_hikka(user_id):
+    user_folder = f"users/{user_id}"
     try:
-        current_folder = os.getcwd() 
-        logging.info(f"Attempting to remove current directory: {current_folder}")
-        
-        result = subprocess.run(['rm', '-rf', current_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+        result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode == 0:
-            logging.info(f"Successfully removed directory: {current_folder}")
+            logging.info(f"Successfully removed directory: {user_folder}")
             return True
         else:
-            logging.error(f"Error removing directory {current_folder}: {result.stderr.decode('utf-8')}")
+            logging.error(f"Error removing directory {user_folder}: {result.stderr.decode('utf-8')}")
             return False
     except Exception as e:
         logging.error(f"Exception occurred during directory removal: {e}")
         return False
-        
+
 def create_keyboard(user_id):
     data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
@@ -151,7 +147,7 @@ def callback_query(call):
     if call.data == 'install':
         if data.get(user_id, {}).get("installing", False):
             return
-        
+
         data[user_id] = {"running": False, "installing": True}
         save_data(data)
 
@@ -205,5 +201,6 @@ def start(message):
         )
 
 if __name__ == "__main__":
-    start_hikka_instances()
+    threading.Thread(target=start_hikka_instances, daemon=True).start()
     bot.polling(none_stop=True)
+    
