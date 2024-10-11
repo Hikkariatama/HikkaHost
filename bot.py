@@ -40,7 +40,7 @@ def animate_installation(message, stop_event):
             bot.edit_message_text(
                 chat_id=message.chat.id,
                 message_id=message.message_id,
-                text=f"🔃 <b>Installing{dots[idx % len(dots)]}</b>",
+                text=f"🔃 <b>Установка{dots[idx % len(dots)]}</b>",
                 parse_mode="HTML"
             )
             idx += 1
@@ -59,7 +59,6 @@ def start_hikka(user_id, message=None, first_name=None):
     stop_event = threading.Event()
 
     def monitor_process():
-        lines_received = 0
         sent_initial_link = False
 
         while True:
@@ -70,19 +69,18 @@ def start_hikka(user_id, message=None, first_name=None):
             if output:
                 decoded_line = output.decode('utf-8')
                 print(decoded_line, end='', flush=True)
-                lines_received += 1
 
                 if not sent_initial_link:
                     link = find_link(decoded_line)
                     if link and message:
                         markup = telebot.types.InlineKeyboardMarkup()
                         web_app = telebot.types.WebAppInfo(link)
-                        markup.add(telebot.types.InlineKeyboardButton("🔗 Open link", web_app=web_app))
+                        markup.add(telebot.types.InlineKeyboardButton("🔗 Тык", web_app=web_app))
 
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, please open the site to continue installation!</b>",
+                            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, открой сайт для продолжения установки!</b>",
                             reply_markup=markup,
                             parse_mode="HTML"
                         )
@@ -98,7 +96,7 @@ def start_hikka(user_id, message=None, first_name=None):
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b> <code>Hikka</code><b> was successfully installed! To remove it, click the button below.</b>",
+                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b> <code>Hikka</code><b> была успешно установлена! Чтобы удалить её, нажми на кнопку снизу.</b>",
                             parse_mode="HTML",
                             reply_markup=create_keyboard(user_id)
                         )
@@ -116,10 +114,17 @@ def stop_hikka(user_id, chat_id):
     user_folder = f"./{user_id}"
     if os.path.exists(user_folder):
         try:
-            subprocess.run(["rm", "-rf", user_folder], check=True)
+            process = subprocess.Popen(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            while True:
+                output = process.stdout.readline()
+                if output == b"" and process.poll() is not None:
+                    break
+                if output:
+                    decoded_line = output.decode('utf-8').strip()
+                    bot.send_message(chat_id, decoded_line)
             bot.send_message(chat_id, "🗑️ Папка пользователя успешно удалена.")
             return True
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             bot.send_message(chat_id, f"⚠️ Ошибка при удалении: {e}")
             return False
     bot.send_message(chat_id, "⚠️ Папка пользователя не найдена.")
@@ -129,9 +134,9 @@ def create_keyboard(user_id):
     data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
     if user_id in data:
-        markup.add(telebot.types.InlineKeyboardButton("🗑️ Remove", callback_data='remove'))
+        markup.add(telebot.types.InlineKeyboardButton("🗑️ Удалить", callback_data='remove'))
     else:
-        markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
+        markup.add(telebot.types.InlineKeyboardButton("🌷 Установить", callback_data='install'))
     return markup
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -150,7 +155,7 @@ def callback_query(call):
         msg = bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text=f"🔃 <b>Installing...</b>",
+            text=f"🔃 <b>Установка...</b>",
             parse_mode="HTML"
         )
         
@@ -166,12 +171,12 @@ def callback_query(call):
             bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> was successfully removed. To reinstall it, click the button below!</b>",
+                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> была успешно удалена. Чтобы установить её обратно, нажми на кнопку снизу!</b>",
                 parse_mode="HTML",
                 reply_markup=create_keyboard(user_id)
             )
         else:
-            bot.send_message(chat_id, "⚠️ Error during removal!")
+            bot.send_message(chat_id, "⚠️ Ошибка удаления!")
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -182,7 +187,7 @@ def start(message):
     if user_id in data and data[user_id].get("running", False):
         bot.send_message(
             message.chat.id,
-            f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, you already have </b><code>Hikka</code> installed! <b>To remove it, click the button below!</b>",
+            f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, вы уже установили </b><code>Hikka</code>! <b>Чтобы её удалить нажмите на кнопку снизу!</b>",
             parse_mode="HTML",
             reply_markup=create_keyboard(user_id)
         )
@@ -192,7 +197,7 @@ def start(message):
             
         msg = bot.send_message(
             message.chat.id,
-            f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <b>to install</b> <code>Hikka</code><b>, click the button below!</b>",
+            f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <b>чтобы установить</b> <code>Hikka</code><b>, нажми на кнопку снизу!</b>",
             parse_mode="HTML",
             reply_markup=create_keyboard(user_id)
         )
@@ -200,4 +205,4 @@ def start(message):
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
-                
+    
