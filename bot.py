@@ -10,8 +10,8 @@ import shutil
 
 TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
-DATA_FILE = 'hikka_data.json'
-LOG_FILE = 'hikka_bot.log'
+DATA_FILE = 'data.json'
+LOG_FILE = 'logs.log'
 
 logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format='%(asctime)s - %(message)s')
 
