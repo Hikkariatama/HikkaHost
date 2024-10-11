@@ -6,14 +6,12 @@ import telebot
 import json
 import threading
 import logging
-import shutil
 
 TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
-DATA_FILE = 'data.json'
-LOG_FILE = 'logs.log'
+DATA_FILE = 'hikka_data.json'
 
-logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename="hikka_bot.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -110,7 +108,7 @@ def start_hikka(user_id, message=None, first_name=None):
                     break
 
             if "error" in decoded_line.lower():
-                logging.error(f"Error detected: {decoded_line.strip()}")
+                logging.error(f"Error during Hikka installation for user {user_id}")
                 break
 
             time.sleep(1)
@@ -123,15 +121,20 @@ def stop_hikka(user_id):
     try:
         if os.path.exists(user_folder):
             logging.info(f"Attempting to remove folder for user {user_id}: {user_folder}")
-            shutil.rmtree(user_folder)
-            logging.info(f"Successfully removed Hikka for user {user_id}")
-            return True
+            result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            if result.returncode == 0:
+                logging.info(f"Successfully removed Hikka for user {user_id}")
+                return True
+            else:
+                logging.error(f"Error removing folder {user_folder}: {result.stderr.decode('utf-8')}")
+                return False
         else:
             logging.error(f"Folder {user_folder} does not exist")
             return False
     except Exception as e:
         logging.error(f"Exception occurred during Hikka removal for user {user_id}: {e}")
-        return False        
+        return False
 
 def create_keyboard(user_id):
     data = load_data()
@@ -165,7 +168,6 @@ def callback_query(call):
         start_hikka(user_id, msg, first_name)
 
     elif call.data == 'remove':
-        logging.info(f"User {user_id} requested removal of Hikka")
         if stop_hikka(user_id):
             data = load_data()
             if user_id in data:
@@ -179,7 +181,6 @@ def callback_query(call):
                 reply_markup=create_keyboard(user_id)
             )
         else:
-            logging.error(f"Failed to remove Hikka for user {user_id}")
             bot.send_message(call.message.chat.id, "⚠️ Error during removal!")
 
 @bot.message_handler(commands=['start'])
