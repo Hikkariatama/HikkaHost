@@ -7,7 +7,7 @@ import json
 import threading
 import logging
 
-TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
+TOKEN = 'хуй вам а не токен'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
 
