@@ -126,10 +126,12 @@ def stop_hikka(user_id):
             shutil.rmtree(user_folder)
             logging.info(f"Successfully removed Hikka for user {user_id}")
             return True
+        else:
+            logging.error(f"Folder {user_folder} does not exist")
+            return False
     except Exception as e:
         logging.error(f"Exception occurred during Hikka removal for user {user_id}: {e}")
-        return False
-    return False
+        return False        
 
 def create_keyboard(user_id):
     data = load_data()
