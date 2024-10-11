@@ -7,19 +7,13 @@ import json
 import threading
 import logging
 import signal
+import sys
 
-TOKEN = 'хуй тоби'
+TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
 
 logging.basicConfig(filename="hikka_bot.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-# Игнорируем сигналы SIGINT и SIGTERM
-def signal_handler(signum, frame):
-    logging.info(f"Signal {signum} received, but ignoring.")
-
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -126,21 +120,26 @@ def start_hikka(user_id, message=None, first_name=None):
 
 def stop_hikka(user_id):
     try:
-        current_folder = os.getcwd() 
-        logging.info(f"Attempting to remove current directory: {current_folder}")
-        
-        result = subprocess.run(['rm', '-rf', current_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        user_folder = f"users/{user_id}"
+        hikka_process = subprocess.Popen(['pgrep', '-f', 'hikka'], stdout=subprocess.PIPE)
+        pid = hikka_process.stdout.read().strip()
+
+        if pid:
+            os.kill(int(pid), signal.SIGTERM)
+
+        logging.info(f"Removing directory: {user_folder}")
+        result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if result.returncode == 0:
-            logging.info(f"Successfully removed directory: {current_folder}")
+            logging.info(f"Successfully removed directory: {user_folder}")
             return True
         else:
-            logging.error(f"Error removing directory {current_folder}: {result.stderr.decode('utf-8')}")
+            logging.error(f"Error removing directory {user_folder}: {result.stderr.decode('utf-8')}")
             return False
     except Exception as e:
         logging.error(f"Exception occurred during directory removal: {e}")
         return False
-        
+
 def create_keyboard(user_id):
     data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
@@ -214,9 +213,4 @@ def start(message):
 
 if __name__ == "__main__":
     start_hikka_instances()
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            logging.error(f"Bot crashed, restarting...: {e}")
-            time.sleep(1)
+    bot.polling(none_stop=True)
