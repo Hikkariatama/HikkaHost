@@ -77,7 +77,7 @@ def start_hikka(user_id, message=None, first_name=None):
                     if link and message:
                         markup = telebot.types.InlineKeyboardMarkup()
                         web_app = telebot.types.WebAppInfo(link)
-                        markup.add(telebot.types.InlineKeyboardButton("🔗 Open", web_app=web_app))
+                        markup.add(telebot.types.InlineKeyboardButton("🔗 Open link", web_app=web_app))
 
                         bot.edit_message_text(
                             chat_id=message.chat.id,
@@ -114,9 +114,12 @@ def start_hikka(user_id, message=None, first_name=None):
 
 def stop_hikka(user_id):
     user_folder = f"./{user_id}"
-    if os.path.exists(user_folder):
-        subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return True
+    try:
+        if os.path.exists(user_folder):
+            subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+    except Exception:
+        return False
     return False
 
 def create_keyboard(user_id):
@@ -193,4 +196,3 @@ def start(message):
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
-    
