@@ -49,7 +49,7 @@ def animate_installation(message, stop_event):
             break
 
 def start_hikka(user_id, message=None, first_name=None):
-    user_folder = f"HikkaHost/{user_id}"
+    user_folder = f"users/{user_id}"
     os.makedirs(user_folder, exist_ok=True)
     os.chdir(user_folder)
 
@@ -113,7 +113,7 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 def stop_hikka(user_id):
-    user_folder = f"HikkaHost/{user_id}"
+    user_folder = f"users/{user_id}"
     try:
         if os.path.exists(user_folder):
             subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
