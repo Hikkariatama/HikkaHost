@@ -172,8 +172,19 @@ def start(message):
     first_name = message.from_user.first_name
     data = load_data()
 
+    if 'last_message_id' in data.get(user_id, {}):
+        try:
+            bot.delete_message(message.chat.id, data[user_id]['last_message_id'])
+        except telebot.apihelper.ApiException:
+            pass
+
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except telebot.apihelper.ApiException:
+        pass
+
     if user_id in data and data[user_id].get("running", False):
-        bot.send_message(
+        msg = bot.send_message(
             message.chat.id,
             f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, you already have </b><code>Hikka</code> installed! <b>To remove it, click the button below!</b>",
             parse_mode="HTML",
@@ -190,7 +201,10 @@ def start(message):
             reply_markup=create_keyboard(user_id)
         )
 
+    data[user_id]['last_message_id'] = msg.message_id
+    save_data(data)
+
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
-    
+            
