@@ -7,13 +7,18 @@ import json
 import threading
 import logging
 import signal
-import sys
 
 TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
 
 logging.basicConfig(filename="hikka_bot.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def signal_handler(signum, frame):
+    logging.info(f"Signal {signum} received, but ignoring.")
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -96,7 +101,7 @@ def start_hikka(user_id, message=None, first_name=None):
 
                 if "hikka" in decoded_line.lower():
                     data = load_data()
-                    data[user_id] = {"running": True, "installing": False}
+                    data[user_id] = {"running": True, "installing": False, "process": process.pid}
                     save_data(data)
 
                     if message:
@@ -119,15 +124,20 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 def stop_hikka(user_id):
+    data = load_data()
+    if user_id in data and "process" in data[user_id]:
+        try:
+            process_id = data[user_id]["process"]
+            os.kill(process_id, signal.SIGTERM)
+            logging.info(f"Successfully terminated process with ID: {process_id}")
+        except Exception as e:
+            logging.error(f"Error terminating process for user {user_id}: {e}")
+    return remove_user_directory(user_id)
+
+def remove_user_directory(user_id):
     try:
         user_folder = f"users/{user_id}"
-        hikka_process = subprocess.Popen(['pgrep', '-f', 'hikka'], stdout=subprocess.PIPE)
-        pid = hikka_process.stdout.read().strip()
-
-        if pid:
-            os.kill(int(pid), signal.SIGTERM)
-
-        logging.info(f"Removing directory: {user_folder}")
+        logging.info(f"Attempting to remove directory: {user_folder}")
         result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if result.returncode == 0:
@@ -213,4 +223,9 @@ def start(message):
 
 if __name__ == "__main__":
     start_hikka_instances()
-    bot.polling(none_stop=True)
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except Exception as e:
+            logging.error(f"Bot crashed, restarting...: {e}")
+            time.sleep(5)
