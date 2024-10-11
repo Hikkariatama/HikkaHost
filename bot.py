@@ -117,10 +117,13 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 def stop_hikka(user_id):
-    user_folder = f"users/{user_id}"
+    user_folder = os.path.abspath(f"users/{user_id}")
     try:
         if os.path.exists(user_folder):
             logging.info(f"Attempting to remove folder for user {user_id}: {user_folder}")
+            
+            os.chdir("/")
+            
             result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             if result.returncode == 0:
@@ -134,7 +137,7 @@ def stop_hikka(user_id):
             return False
     except Exception as e:
         logging.error(f"Exception occurred during Hikka removal for user {user_id}: {e}")
-        return False
+        return False        
 
 def create_keyboard(user_id):
     data = load_data()
