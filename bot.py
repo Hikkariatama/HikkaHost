@@ -130,6 +130,8 @@ def create_keyboard(user_id):
 
 def save_last_message_id(user_id, message_id):
     data = load_data()
+    if user_id not in data:
+        data[user_id] = {}
     data[user_id]['last_message_id'] = message_id
     save_data(data)
 
@@ -212,4 +214,4 @@ def start(message):
 if __name__ == "__main__":
     start_hikka_instances()
     bot.polling(none_stop=True)
-                    
+            
