@@ -44,7 +44,6 @@ def start_hikka_instances():
 def animate_installation(message, stop_event):
     dots = ["", ".", "..", "..."]
     idx = 0
-
     while not stop_event.is_set():
         try:
             bot.edit_message_text(
@@ -65,6 +64,12 @@ def start_hikka(user_id, message=None, first_name=None):
 
     wget_command = "wget -qO- https://hikariatama.ru/get_hikka | bash"
     process = subprocess.Popen(wget_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    data = load_data()
+    if user_id not in data:
+        data[user_id] = {}
+    data[user_id]["pid"] = process.pid
+    save_data(data)
 
     stop_event = threading.Event()
 
@@ -101,7 +106,7 @@ def start_hikka(user_id, message=None, first_name=None):
 
                 if "hikka" in decoded_line.lower():
                     data = load_data()
-                    data[user_id] = {"running": True, "installing": False, "process": process.pid}
+                    data[user_id] = {"running": True, "installing": False}
                     save_data(data)
 
                     if message:
@@ -125,30 +130,19 @@ def start_hikka(user_id, message=None, first_name=None):
 
 def stop_hikka(user_id):
     data = load_data()
-    if user_id in data and "process" in data[user_id]:
+    if user_id in data and "pid" in data[user_id]:
         try:
-            process_id = data[user_id]["process"]
-            os.kill(process_id, signal.SIGTERM)
-            logging.info(f"Successfully terminated process with ID: {process_id}")
+            pid = data[user_id]["pid"]
+            os.kill(pid, signal.SIGTERM)
+            logging.info(f"Successfully terminated process with PID: {pid} for user {user_id}")
         except Exception as e:
             logging.error(f"Error terminating process for user {user_id}: {e}")
-    return remove_user_directory(user_id)
 
-def remove_user_directory(user_id):
-    try:
-        user_folder = f"users/{user_id}"
-        logging.info(f"Attempting to remove directory: {user_folder}")
-        result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        if result.returncode == 0:
-            logging.info(f"Successfully removed directory: {user_folder}")
-            return True
-        else:
-            logging.error(f"Error removing directory {user_folder}: {result.stderr.decode('utf-8')}")
-            return False
-    except Exception as e:
-        logging.error(f"Exception occurred during directory removal: {e}")
-        return False
+def remove_user_folder(user_id):
+    user_folder = f"users/{user_id}"
+    if os.path.exists(user_folder):
+        subprocess.run(['rm', '-rf', user_folder])
+        logging.info(f"Successfully removed folder: {user_folder}")
 
 def create_keyboard(user_id):
     data = load_data()
@@ -182,20 +176,19 @@ def callback_query(call):
         start_hikka(user_id, msg, first_name)
 
     elif call.data == 'remove':
-        if stop_hikka(user_id):
-            data = load_data()
-            if user_id in data:
-                del data[user_id]
-                save_data(data)
-            bot.edit_message_text(
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> was successfully removed. To reinstall it, click the button below!</b>",
-                parse_mode="HTML",
-                reply_markup=create_keyboard(user_id)
-            )
-        else:
-            bot.send_message(call.message.chat.id, "⚠️ Error during removal!")
+        stop_hikka(user_id)
+        remove_user_folder(user_id)
+        data = load_data()
+        if user_id in data:
+            del data[user_id]
+            save_data(data)
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> was successfully removed. To reinstall it, click the button below!</b>",
+            parse_mode="HTML",
+            reply_markup=create_keyboard(user_id)
+        )
 
 @bot.message_handler(commands=['start'])
 def start(message):
