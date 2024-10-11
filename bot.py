@@ -113,7 +113,7 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 def stop_hikka(user_id):
-    user_folder = f"/{user_id}"
+    user_folder = f"./{user_id}"
     try:
         if os.path.exists(user_folder):
             subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
