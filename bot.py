@@ -115,8 +115,7 @@ def start_hikka(user_id, message=None, first_name=None):
 def stop_hikka(user_id):
     user_folder = f"./{user_id}"
     if os.path.exists(user_folder):
-        subprocess.run(["pkill", "-f", "Hikka"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        subprocess.run(["sudo", "rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     return False
 
