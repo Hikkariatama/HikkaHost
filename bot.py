@@ -159,7 +159,7 @@ def callback_query(call):
             bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, Hikka была успешно удалена. Чтобы установить её обратно, нажми на кнопку снизу!</b>",
+                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> была успешно удалена. Чтобы установить её обратно, нажми на кнопку снизу!</b>",
                 parse_mode="HTML",
                 reply_markup=create_keyboard(user_id)
             )
