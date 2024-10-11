@@ -49,7 +49,7 @@ def animate_installation(message, stop_event):
             break
 
 def start_hikka(user_id, message=None, first_name=None):
-    user_folder = f"./{user_id}"
+    user_folder = f"HikkaHost/{user_id}"
     os.makedirs(user_folder, exist_ok=True)
     os.chdir(user_folder)
 
@@ -77,7 +77,7 @@ def start_hikka(user_id, message=None, first_name=None):
                     if link and message:
                         markup = telebot.types.InlineKeyboardMarkup()
                         web_app = telebot.types.WebAppInfo(link)
-                        markup.add(telebot.types.InlineKeyboardButton("🔗 Open link", web_app=web_app))
+                        markup.add(telebot.types.InlineKeyboardButton("🔗 Open", web_app=web_app))
 
                         bot.edit_message_text(
                             chat_id=message.chat.id,
