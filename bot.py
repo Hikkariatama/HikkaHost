@@ -117,28 +117,22 @@ def start_hikka(user_id, message=None, first_name=None):
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
 
 def stop_hikka(user_id):
-    user_folder = os.path.abspath(f"users/{user_id}")
     try:
-        if os.path.exists(user_folder):
-            logging.info(f"Attempting to remove folder for user {user_id}: {user_folder}")
-            
-            os.chdir("/")
-            
-            result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        current_folder = os.getcwd() 
+        logging.info(f"Attempting to remove current directory: {current_folder}")
+        
+        result = subprocess.run(['rm', '-rf', current_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            if result.returncode == 0:
-                logging.info(f"Successfully removed Hikka for user {user_id}")
-                return True
-            else:
-                logging.error(f"Error removing folder {user_folder}: {result.stderr.decode('utf-8')}")
-                return False
+        if result.returncode == 0:
+            logging.info(f"Successfully removed directory: {current_folder}")
+            return True
         else:
-            logging.error(f"Folder {user_folder} does not exist")
+            logging.error(f"Error removing directory {current_folder}: {result.stderr.decode('utf-8')}")
             return False
     except Exception as e:
-        logging.error(f"Exception occurred during Hikka removal for user {user_id}: {e}")
-        return False        
-
+        logging.error(f"Exception occurred during directory removal: {e}")
+        return False
+        
 def create_keyboard(user_id):
     data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
