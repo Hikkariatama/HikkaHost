@@ -5,10 +5,15 @@ import time
 import telebot
 import json
 import threading
+import logging
+import shutil
 
 TOKEN = '8164536485:AAHjwHcVkV5gdTZ86NCeJKCcNbI8nC56IQc'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
+LOG_FILE = 'hikka_bot.log'
+
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -69,7 +74,7 @@ def start_hikka(user_id, message=None, first_name=None):
 
             if output:
                 decoded_line = output.decode('utf-8')
-                print(decoded_line, end='', flush=True)
+                logging.info(decoded_line.strip())
                 lines_received += 1
 
                 if not sent_initial_link:
@@ -105,6 +110,7 @@ def start_hikka(user_id, message=None, first_name=None):
                     break
 
             if "error" in decoded_line.lower():
+                logging.error(f"Error detected: {decoded_line.strip()}")
                 break
 
             time.sleep(1)
@@ -116,10 +122,12 @@ def stop_hikka(user_id):
     user_folder = f"users/{user_id}"
     try:
         if os.path.exists(user_folder):
-            subprocess.run(["rm", "-rf", user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logging.info(f"Attempting to remove folder for user {user_id}: {user_folder}")
+            shutil.rmtree(user_folder)
+            logging.info(f"Successfully removed Hikka for user {user_id}")
             return True
-    except Exception:
-        print({e})
+    except Exception as e:
+        logging.error(f"Exception occurred during Hikka removal for user {user_id}: {e}")
         return False
     return False
 
@@ -155,6 +163,7 @@ def callback_query(call):
         start_hikka(user_id, msg, first_name)
 
     elif call.data == 'remove':
+        logging.info(f"User {user_id} requested removal of Hikka")
         if stop_hikka(user_id):
             data = load_data()
             if user_id in data:
@@ -168,6 +177,7 @@ def callback_query(call):
                 reply_markup=create_keyboard(user_id)
             )
         else:
+            logging.error(f"Failed to remove Hikka for user {user_id}")
             bot.send_message(call.message.chat.id, "⚠️ Error during removal!")
 
 @bot.message_handler(commands=['start'])
