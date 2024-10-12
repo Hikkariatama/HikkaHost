@@ -8,9 +8,10 @@ import threading
 import logging
 import signal
 
-TOKEN = 'ZV паремога'
+TOKEN = 'zvzvzzzzv goida premoga'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
+ROOT_DIR = os.getcwd()
 
 logging.basicConfig(filename="hikka_bot.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -59,7 +60,7 @@ def animate_installation(message, stop_event):
             break
 
 def start_hikka(user_id, message=None, first_name=None):
-    user_folder = f"users/{user_id}"
+    user_folder = os.path.join(ROOT_DIR, f"users/{user_id}")
     os.makedirs(user_folder, exist_ok=True)
     os.chdir(user_folder)
 
@@ -113,7 +114,7 @@ def start_hikka(user_id, message=None, first_name=None):
                             reply_markup=create_keyboard(user_id)
                         )
                     
-                    os.chdir("../../")
+                    os.chdir(ROOT_DIR)
                     break
 
             if "error" in decoded_line.lower():
@@ -127,7 +128,7 @@ def start_hikka(user_id, message=None, first_name=None):
 
 def stop_hikka(user_id):
     try:
-        user_folder = os.path.join("users", user_id)
+        user_folder = os.path.join(ROOT_DIR, "users", user_id)
         logging.info(f"Attempting to remove user directory: {user_folder}")
         
         result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -222,4 +223,4 @@ if __name__ == "__main__":
         except Exception as e:
             logging.error(f"Bot crashed, restarting...: {e}")
             time.sleep(1)
-    
+            
