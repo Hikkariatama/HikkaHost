@@ -8,7 +8,7 @@ import threading
 import logging
 import signal
 
-TOKEN = 'zvzvzzzzv goida premoga'
+TOKEN = '7241496684:AAHFKxIKILU55eG1vjMQugt0EkLMfURvmnw'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
 
@@ -112,6 +112,8 @@ def start_hikka(user_id, message=None, first_name=None):
                             parse_mode="HTML",
                             reply_markup=create_keyboard(user_id)
                         )
+                    
+                    os.chdir("../../")
                     break
 
             if "error" in decoded_line.lower():
@@ -125,16 +127,16 @@ def start_hikka(user_id, message=None, first_name=None):
 
 def stop_hikka(user_id):
     try:
-        current_folder = os.getcwd() 
-        logging.info(f"Attempting to remove current directory: {current_folder}")
+        user_folder = os.path.join("users", user_id)
+        logging.info(f"Attempting to remove user directory: {user_folder}")
         
-        result = subprocess.run(['rm', '-rf', current_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if result.returncode == 0:
-            logging.info(f"Successfully removed directory: {current_folder}")
+            logging.info(f"Successfully removed user directory: {user_folder}")
             return True
         else:
-            logging.error(f"Error removing directory {current_folder}: {result.stderr.decode('utf-8')}")
+            logging.error(f"Error removing user directory {user_folder}: {result.stderr.decode('utf-8')}")
             return False
     except Exception as e:
         logging.error(f"Exception occurred during directory removal: {e}")
@@ -212,6 +214,7 @@ def start(message):
         )
 
 if __name__ == "__main__":
+ 
     start_hikka_instances()
     while True:
         try:
@@ -219,3 +222,4 @@ if __name__ == "__main__":
         except Exception as e:
             logging.error(f"Bot crashed, restarting...: {e}")
             time.sleep(1)
+    
