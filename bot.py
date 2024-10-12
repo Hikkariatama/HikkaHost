@@ -11,7 +11,6 @@ import signal
 TOKEN = 'zvzvzzzzv goida premoga'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
-ROOT_DIR = os.getcwd()
 
 logging.basicConfig(filename="hikka_bot.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -60,7 +59,7 @@ def animate_installation(message, stop_event):
             break
 
 def start_hikka(user_id, message=None, first_name=None):
-    user_folder = os.path.join(ROOT_DIR, f"users/{user_id}")
+    user_folder = f"users/{user_id}"
     os.makedirs(user_folder, exist_ok=True)
     os.chdir(user_folder)
 
@@ -109,12 +108,11 @@ def start_hikka(user_id, message=None, first_name=None):
                         bot.edit_message_text(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b> <code>Hikka</code><b> was successfully installed! To remove it, click the button below.</b>",
-                            parse_mode="HTML",
-                            reply_markup=create_keyboard(user_id)
+                            text=f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <code>Hikka</code> <b>successfully installed</b>. To remove it, kick it from your account!",
+                            parse_mode="HTML"
                         )
                     
-                    os.chdir(ROOT_DIR)
+                    os.chdir("../../")
                     break
 
             if "error" in decoded_line.lower():
@@ -125,23 +123,6 @@ def start_hikka(user_id, message=None, first_name=None):
 
     threading.Thread(target=monitor_process, daemon=True).start()
     threading.Thread(target=animate_installation, args=(message, stop_event), daemon=True).start()
-
-def stop_hikka(user_id):
-    try:
-        user_folder = os.path.join(ROOT_DIR, "users", user_id)
-        logging.info(f"Attempting to remove user directory: {user_folder}")
-        
-        result = subprocess.run(['rm', '-rf', user_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        if result.returncode == 0:
-            logging.info(f"Successfully removed user directory: {user_folder}")
-            return True
-        else:
-            logging.error(f"Error removing user directory {user_folder}: {result.stderr.decode('utf-8')}")
-            return False
-    except Exception as e:
-        logging.error(f"Exception occurred during directory removal: {e}")
-        return False
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -165,54 +146,23 @@ def callback_query(call):
         
         start_hikka(user_id, msg, first_name)
 
-    elif call.data == 'remove':
-        if stop_hikka(user_id):
-            data = load_data()
-            if user_id in data:
-                del data[user_id]
-                save_data(data)
-            bot.edit_message_text(
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                text=f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>,</b><code> Hikka</code><b> was successfully deleted from the hosting. To completely end its session, remove it from Telegram settings! To reinstall, click the button below!</b>",
-                parse_mode="HTML",
-                reply_markup=create_keyboard(user_id)
-            )
-        else:
-            bot.send_message(call.message.chat.id, "⚠️ Error during removal!")
-            
 def create_keyboard(user_id):
     data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
-    if user_id in data:
-        markup.add(telebot.types.InlineKeyboardButton("🗑️ Remove", callback_data='remove'))
-    else:
-        markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
+    markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
     return markup
                     
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = str(message.from_user.id)
     first_name = message.from_user.first_name
-    data = load_data()
 
-    if user_id in data and data[user_id].get("running", False):
-        bot.send_message(
-            message.chat.id,
-            f"👋 <a href='tg://user?id={user_id}'>{first_name}</a><b>, you already have </b><code>Hikka</code> installed! <b>To remove it, click the button below!</b>",
-            parse_mode="HTML",
-            reply_markup=create_keyboard(user_id)
-        )
-    else:
-        if user_id in data and data[user_id].get("installing", False):
-            return
-            
-        msg = bot.send_message(
-            message.chat.id,
-            f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <b>to install</b> <code>Hikka</code><b>, click the button below!</b>",
-            parse_mode="HTML",
-            reply_markup=create_keyboard(user_id)
-        )
+    msg = bot.send_message(
+        message.chat.id,
+        f"🌸 <a href='tg://user?id={user_id}'>{first_name}</a>, <b>to install</b> <code>Hikka</code><b>, click the button below!</b>",
+        parse_mode="HTML",
+        reply_markup=create_keyboard(user_id)
+    )
 
 if __name__ == "__main__":
  
@@ -222,5 +172,4 @@ if __name__ == "__main__":
             bot.polling(none_stop=True)
         except Exception as e:
             logging.error(f"Bot crashed, restarting...: {e}")
-            time.sleep(1)
-            
+            time.sleep(1)                    
