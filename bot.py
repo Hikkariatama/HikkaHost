@@ -30,6 +30,11 @@ def save_data(data):
     with open(DATA_FILE, 'w') as file:
         json.dump(data, file, indent=4)
 
+def find_link(output):
+    url_pattern = r'https?://[^\s]+'
+    links = re.findall(url_pattern, output)
+    return links[-1] if links else None
+
 def start_hikka_instances():
     data = load_data()
     for user_id, user_data in data.items():
@@ -159,8 +164,10 @@ def callback_query(call):
         start_hikka(user_id, msg, first_name)
 
 def create_keyboard(user_id):
+    data = load_data()
     markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
+    if user_id in data:
+        markup.add(telebot.types.InlineKeyboardButton("🌷 Install", callback_data='install'))
     return markup
                     
 @bot.message_handler(commands=['start'])
@@ -169,12 +176,20 @@ def start(message):
     first_name = message.from_user.first_name
     data = load_data()
 
-    msg = bot.send_message(
-        message.chat.id,
-        f"<a href='tg://user?id={user_id}'>{first_name}</a>, <b>to install</b> <code>Hikka</code><b>, click the button below!</b>",
-        parse_mode="HTML",
-        reply_markup=create_keyboard(user_id)
-    )
+    if user_id in data and data[user_id].get("running", False):
+        bot.send_message(
+            message.chat.id,
+            f"<a href='tg://user?id={user_id}'>{first_name}</a>, <b>to install</b> <code>Hikka</code><b>, click the button below!</b>",
+            parse_mode="HTML",
+            reply_markup=create_keyboard(user_id)
+        )
+    else:
+        msg = bot.send_message(
+            message.chat.id,
+            f"<a href='tg://user?id={user_id}'>{first_name}</a>, <b>to install</b> <code>Hikka</code><b>, click the button below!</b>",
+            parse_mode="HTML",
+            reply_markup=create_keyboard(user_id)
+        )
 
 @bot.message_handler(commands=['starthikka'])
 def starthikka(message):
@@ -203,4 +218,3 @@ if __name__ == "__main__":
         except Exception as e:
             logging.error(f"Bot crashed, restarting...: {e}")
             time.sleep(1)
-    
