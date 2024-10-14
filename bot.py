@@ -8,7 +8,7 @@ import threading
 import logging
 import signal
 
-TOKEN = 'zvzvzzzzv goida premoga'
+TOKEN = '7526333379:AAHThh7ofhhpjtzt0PKDWijGin7pYkIs0WM'
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = 'hikka_data.json'
 
